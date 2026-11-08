@@ -1,5 +1,12 @@
-import os, random, time, telebot
+import os, random, time, telebot, threading
 from telebot.types import LabeledPrice, InlineKeyboardMarkup, InlineKeyboardButton
+from flask import Flask
+
+# Локальный мини-сервер для обхода проверок бесплатного тарифа Render
+app = Flask('')
+@app.route('/')
+def home(): return "Agent Jones is online!"
+def run_web(): app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
 
 bot = telebot.TeleBot(os.environ.get('TELEGRAM_BOT_TOKEN', ''))
 CREATOR_ID = 5652739383
@@ -30,7 +37,7 @@ def send_welcome(m):
     markup.add(InlineKeyboardButton("💎 Премиум Агента (15 ⭐️)", callback_data="buy_premium"), InlineKeyboardButton("🎰 Сундук Фортуны", callback_data="open_chest_cb"))
     markup.add(InlineKeyboardButton("🛒 Магазин Предметов", url="https://fortnite.gg"), InlineKeyboardButton("🏅 Мой Профиль / Stats", callback_data="view_profile"))
     markup.add(InlineKeyboardButton("📢 Похвастаться / Поделиться", url=f"https://t.me{bot.get_me().username}&text=🔥 Залетай к Агенту Джоунси за картами сундуков Fortnite! 📦"))
-    bot.send_message(m.chat.id, f"Привет, {name}! Я Агент Джоунси. 🎯 Помогу найти Pirate Shop Token in Fortnite!\n\nВыбирай действие: 👇", reply_markup=markup)
+    bot.send_message(m.chat.id, f"Привет, {name}! Я Агент Джоунси. 🎯 Помогу найти Pirate Shop Token в Fortnite!\n\nВыбирай действие: 👇", reply_markup=markup)
 
 @bot.callback_query_handler(func=lambda c: c.data == "view_profile")
 def view_profile(c):
@@ -101,5 +108,9 @@ def handle_ai_chat(m):
     
     bot.reply_to(m, f"{name}, {rep}")
 
-print("Бот запущен...")
-bot.polling(none_stop=True)
+if __name__ == "__main__":
+    # Запускаем фейковый веб-сайт в отдельном потоке для Render Free тарифа
+    threading.Thread(target=run_web, daemon=True).start()
+    print("Бот запущен...")
+    bot.polling(none_stop=True)
+
